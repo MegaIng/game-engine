@@ -76,7 +76,7 @@ class Vector(VectorType):
         return self
 
     def __round__(self, n=None) -> Vector:
-        return Vector(round(self.x, n), round(self.x, n))
+        return Vector(round(self.x, n), round(self.y, n))
 
     def change_rotation(self, rotation: float) -> Vector:
         v = Vector(self.x, self.y)
