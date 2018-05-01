@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 import random
 from numbers import Real
-from typing import Union, Sequence, cast
+from typing import Union, Sequence, cast, Tuple
 
 from typecheck import typecheck
 
@@ -59,24 +59,46 @@ class Vector(VectorType):
     def __rmul__(self, other: Real):
         return Vector(self.x * other, self.y * other)
 
+    def __imul__(self, other):
+        self.x *= other
+        self.y *= other
+        return self
+
     def __matmul__(self, other: VectorType):
         return Vector(self.x * other[0], self.y * other[1])
 
     def __rmatmul__(self, other):
         return Vector(other[0] * self.x, other[1] * self.y)
 
+    def __imatmul__(self, other):
+        self.x *= other[0]
+        self.y *= other[1]
+        return self
+
     def __truediv__(self, other: Union[VectorType, Real]) -> Vector:
         if isinstance(other, Sequence):
             return Vector(self.x / other[0], self.y / other[1])
-        return Vector(self.x / other, self.y / other)
+        else:
+            return Vector(self.x / other, self.y / other)
 
-    def __rtruediv__(self, other: VectorType) -> Vector:
-        self.x /= other
-        self.y /= other
-        return self
+    def __rtruediv__(self, other: Union[VectorType, Real]) -> Vector:
+        if isinstance(other, Sequence):
+            return Vector(other[0] / self.x, other[1] / self.y)
+        else:
+            return Vector(other / self.x, other / self.y)
+
+    def __itruediv__(self, other: Union[VectorType, Real]) -> Vector:
+        if isinstance(other, Sequence):
+            self.x /= other[0]
+            self.y /= other[1]
+            return self
+        else:
+            self.x /= other
+            self.y /= other
+            return self
 
     def __round__(self, n=None) -> Vector:
-        return Vector(round(self.x, n), round(self.x, n))
+        return Vector(round(self.x, n), round(self.y, n))
 
     def change_rotation(self, rotation: float) -> Vector:
         v = Vector(self.x, self.y)
@@ -108,16 +130,15 @@ class Vector(VectorType):
         self.y *= f
 
     @property
-    def rotation(self):
+    def rotation(self) -> Real:
         return math.atan2(self.x, self.y)
 
     @rotation.setter
-    def rotation(self, value):
+    def rotation(self, value: Real):
         m = self.magnitude
-        self.x = math.sin(value)
-        self.y = math.cos(value)
-        self.magnitude = m
+        self.x = math.sin(value) * m
+        self.y = math.cos(value) * m
 
     @property
-    def rounded(self):
+    def rounded(self) -> Tuple[Real, Real]:
         return round(self.x), round(self.y)

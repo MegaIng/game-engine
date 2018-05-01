@@ -6,8 +6,11 @@ from typing import Sequence, Tuple
 from typecheck import typecheck
 from vector import Vector, VectorType
 
+RectType = Sequence[VectorType]
+
+
 @typecheck(typecheck_setattr=True)
-class Rect(Sequence[Sequence[Real]]):
+class Rect(RectType):
     def __len__(self) -> int:
         return 2
 
@@ -29,6 +32,12 @@ class Rect(Sequence[Sequence[Real]]):
     def __repr__(self):
         return f"{self.__class__.__name__}{(self.pos1, self.pos2)}"
 
+    def _sort_coordinates(self):
+        if self.pos1.x > self.pos2.x:
+            self.pos1.x, self.pos2.x = self.pos2.x, self.pos1.x
+        if self.pos1.y > self.pos2.y:
+            self.pos1.y, self.pos2.y = self.pos2.y, self.pos1.y
+
     @classmethod
     def from_xywh(cls, xy: VectorType, wh: VectorType):
         return Rect(Vector(xy), Vector(xy) + Vector(wh))
@@ -36,10 +45,10 @@ class Rect(Sequence[Sequence[Real]]):
     def scale_wh(self, scale: VectorType) -> Rect:
         return Rect((self.pos1.x * scale[0], self.pos1.y * scale[1]), (self.pos2.x * scale[0], self.pos2.y * scale[1]))
 
-    def collide_point(self, pos: VectorType):
+    def collide_point(self, pos: VectorType) -> bool:
         return self.pos1.x <= pos[0] <= self.pos2[1] and self.pos1.y <= pos[1] <= self.pos2.y
 
-    def collide_rect(self, other: Rect):
+    def collide_rect(self, other: Rect) -> bool:
         return any(self.collide_point(p) for p in (other.top_left, other.top_right, other.bottom_left, other.bottom_right)) or \
                any(other.collide_point(p) for p in (self.top_left, self.top_right, self.bottom_left, self.bottom_right))
 
@@ -54,58 +63,62 @@ class Rect(Sequence[Sequence[Real]]):
         return (point - self.pos1) / self.wh
 
     @property
-    def xywh(self):
+    def xywh(self) -> Tuple[Real, Real, Real, Real]:
         return self.left, self.top, self.width, self.height
 
     @property
-    def width(self):
-        return abs(self.pos1.x - self.pos2.x)
+    def width(self) -> Real:
+        return self.pos2.x - self.pos1.x
 
     w = width
 
     @property
-    def height(self):
-        return abs(self.pos1.y - self.pos2.y)
+    def height(self) -> Real:
+        return self.pos2.y - self.pos1.y
 
     h = height
 
     @property
-    def size(self):
+    def size(self) -> Vector:
         return Vector(self.w, self.h)
 
     wh: Vector = size
 
     @property
-    def left(self) -> float:
+    def left(self) -> Real:
         return self.pos1.x
 
     @left.setter
-    def left(self, value: float):
+    def left(self, value: Real):
         self.pos1.x = value
+        self._sort_coordinates()
 
     @property
-    def right(self):
+    def right(self) -> Real:
         return self.pos2.x
 
     @right.setter
-    def right(self, value):
+    def right(self, value: Real):
         self.pos2.x = value
+        self._sort_coordinates()
 
     @property
-    def top(self):
+    def top(self) -> Real:
         return self.pos1.y
 
     @top.setter
-    def top(self, value):
+    def top(self, value: Real):
         self.pos1.y = value
+        self._sort_coordinates()
 
     @property
-    def bottom(self):
+    def bottom(self) -> Real:
         return self.pos2.y
 
     @bottom.setter
-    def bottom(self, value):
+    def bottom(self, value: Real):
         self.pos2.y = value
+        self._sort_coordinates()
 
     @property
     def top_left(self) -> Vector:
@@ -114,6 +127,7 @@ class Rect(Sequence[Sequence[Real]]):
     @top_left.setter
     def top_left(self, value: Vector):
         self.pos1 = value
+        self._sort_coordinates()
 
     xy: Vector = top_left
 
@@ -124,6 +138,7 @@ class Rect(Sequence[Sequence[Real]]):
     @bottom_right.setter
     def bottom_right(self, value: Vector):
         self.pos2 = value
+        self._sort_coordinates()
 
     @property
     def top_right(self) -> Vector:
@@ -132,6 +147,7 @@ class Rect(Sequence[Sequence[Real]]):
     @top_right.setter
     def top_right(self, value: Vector):
         self.pos2.x, self.pos1.y = value
+        self._sort_coordinates()
 
     @property
     def bottom_left(self) -> Vector:
@@ -140,16 +156,8 @@ class Rect(Sequence[Sequence[Real]]):
     @bottom_left.setter
     def bottom_left(self, value: VectorType):
         self.pos1.x, self.pos2.y = value
+        self._sort_coordinates()
 
     @property
     def center(self) -> Vector:
         return Vector(self.pos1.x + self.w / 2, self.pos1.y + self.h / 2)
-
-    @property
-    def normalized(self):
-        x1, x2 = sorted((self.pos1.x, self.pos2.x))
-        y1, y2 = sorted((self.pos1.y, self.pos2.y))
-        return Rect((x1, y1), (x2, y2))
-
-
-RectType = Sequence[Sequence[float]]
